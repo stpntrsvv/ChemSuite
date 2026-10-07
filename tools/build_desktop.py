@@ -38,7 +38,12 @@ def main():
     import tempfile
     report = release / "acceptance.json"
     with tempfile.TemporaryDirectory() as unrelated:
-        run(executable, "--self-test", "--report", report, cwd=unrelated, env=environment, timeout=240)
+        try:
+            run(executable, "--self-test", "--report", report, cwd=unrelated, env=environment, timeout=240)
+        except subprocess.CalledProcessError:
+            if report.is_file():
+                print(report.read_text(encoding="utf-8"), flush=True)
+            raise
     result = json.loads(report.read_text())
     if result.get("status") != "passed" or result.get("frozen") is not True:
         raise RuntimeError("Packaged acceptance did not pass")

@@ -59,6 +59,7 @@ def run_checks(folder):
     from chem_suite.bootstrap import builtins
     from chem_suite.core.contracts import ActionSpec, JobRequest, JobState, ModuleSpec
     from chem_suite.desktop.app import MainWindow, create_application
+    assert not getattr(sys, "frozen", False) or sys.flags.utf8_mode == 1, "Frozen runtime must use UTF-8"
     app = create_application()
     assert app.applicationName() == "Chem Suite"
     assert app.applicationVersion() == __version__

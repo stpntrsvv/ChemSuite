@@ -34,6 +34,7 @@ Source launches retain `.chem-suite` for compatibility.
 Workers use POSIX process groups or Windows Job Objects. Cancellation and timeouts
 stop subprocesses belonging to that worker without stopping the desktop or another job.
 `freeze_support()` runs before imports and argument parsing to prevent worker launch loops.
+Both frozen launchers explicitly enable Python UTF-8 mode, independent of Windows locale.
 
 ## Local build
 
