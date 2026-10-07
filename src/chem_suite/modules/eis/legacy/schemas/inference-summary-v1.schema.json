@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eis-solver.local/schemas/inference-summary-v1.schema.json",
+  "title": "EIS Solver inference summary v1",
+  "type": "object",
+  "required": ["schema_version", "analysis", "file", "success", "verdict"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "analysis": {"const": "unified_eis_inference_summary"},
+    "file": {"type": "string"},
+    "success": {"type": "boolean"},
+    "verdict": {
+      "enum": ["recommended", "models_indistinguishable", "insufficient_information", "analysis_failed"]
+    },
+    "best_statistical": {"type": ["string", "null"]},
+    "recommended_reliable": {"type": ["string", "null"]},
+    "recommended_family": {"type": ["string", "null"]},
+    "recommended_topology": {"type": ["string", "null"]},
+    "family_status": {"type": ["string", "null"]},
+    "topology_status": {"type": ["string", "null"]},
+    "data_validity": {"type": ["string", "null"]},
+    "fit_status": {"type": ["string", "null"]},
+    "reason": {"type": ["string", "null"]},
+    "next_action": {"type": ["string", "null"]},
+    "information_gap_type": {"type": ["string", "null"]},
+    "information_gap_min_hz": {"type": ["number", "null"]},
+    "information_gap_max_hz": {"type": ["number", "null"]},
+    "diffusion_gate_evaluated": {"type": ["boolean", "null"]},
+    "diffusion_gate_passed": {"type": ["boolean", "null"]},
+    "diffusion_gate_positive_only": {"type": ["boolean", "null"]},
+    "diffusion_family_delta_bic": {"type": ["number", "null"]},
+    "diffusion_family_stability_threshold": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "diffusion_family_delta_bic_threshold": {"type": ["number", "null"]},
+    "stable_time_regions": {"type": "integer", "minimum": 0},
+    "unstable_time_regions": {"type": "integer", "minimum": 0},
+    "elapsed_seconds": {"type": ["number", "null"], "minimum": 0},
+    "error_message": {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}

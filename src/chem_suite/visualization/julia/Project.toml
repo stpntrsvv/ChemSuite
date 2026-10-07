@@ -1,0 +1,10 @@
+[deps]
+Bonito = "824d6782-a2ef-11e9-3a09-e5662e0c26f8"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+WGLMakie = "276b4fcb-3e11-5398-bf8b-a0c2d153d008"
+
+[compat]
+julia = "1.10"
+JSON3 = "1"
+

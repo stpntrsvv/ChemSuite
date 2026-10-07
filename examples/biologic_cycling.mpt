@@ -1,0 +1,13 @@
+EC-Lab ASCII FILE
+Nb header lines : 5
+Galvanostatic cycling with potential limitation
+Synthetic public baseline
+mode	error	time/s	Ewe/V	Ecell/V	I/mA	cycle number	Ns
+1	0	0	1.7	1.5	10	0	0
+1	0	3600	1.7	1.5	10	0	0
+2	0	3600	1.7	1.5	5	0	1
+2	0	7200	1.7	1.5	5	0	1
+3	0	7200	1.65	1.45	0.1	0	2
+3	0	7300	1.6	1.4	0.1	0	2
+1	0	7300	1.4	1.2	-8	0	3
+1	0	10900	1.4	1.2	-8	0	3

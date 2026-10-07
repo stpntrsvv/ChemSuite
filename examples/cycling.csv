@@ -1,0 +1,14 @@
+cycle,step,time_s,voltage_V,current_A
+1,charge,0,1.5,0.01
+1,charge,1800,1.5,0.01
+1,charge,3600,1.5,0.01
+1,rest,0,1.4,0
+1,rest,30,1.4,0
+1,discharge,0,1.2,-0.008
+1,discharge,1800,1.2,-0.008
+1,discharge,3600,1.2,-0.008
+2,charge,0,1.5,0.01
+2,charge,3600,1.5,0.01
+2,discharge,0,1.2,-0.0078
+2,discharge,3600,1.2,-0.0078
+

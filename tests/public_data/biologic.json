@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "sources": {
+    "galvani": {
+      "page": "https://github.com/echemdata/galvani",
+      "commit": "d4a5f444b16eae57d2edfad6df774ead95c92fd6",
+      "license": "CC-BY-4.0",
+      "attribution": "Christopher Kerr, Galvani test data (2010–2014)",
+      "license_declaration": "https://github.com/echemdata/galvani/blob/d4a5f444b16eae57d2edfad6df774ead95c92fd6/.reuse/dep5"
+    },
+    "sintef": {
+      "page": "https://zenodo.org/records/18986774",
+      "doi": "10.5281/zenodo.18986774",
+      "version": "0.7.1",
+      "license": "CC-BY-4.0",
+      "attribution": "Simon Clark, Julian Tolchard, Dennis Kopljar, Christina Schmitt, Elias Barbers; Battery Datasets for Testing Data Pipelines and Workflow Automation"
+    }
+  },
+  "files": [
+    {
+      "id": "formation-mpr",
+      "filename": "020-formation_CB5.mpr",
+      "url": "https://media.githubusercontent.com/media/echemdata/galvani/d4a5f444b16eae57d2edfad6df774ead95c92fd6/tests/testdata/020-formation_CB5.mpr",
+      "size": 157216,
+      "sha256": "586836288e1144454c277ecd6adfc384bfe1614ed141900c5f004b26a8b54d64",
+      "source": "galvani",
+      "large": false
+    },
+    {
+      "id": "formation-mpt",
+      "filename": "020-formation_CB5.mpt",
+      "url": "https://media.githubusercontent.com/media/echemdata/galvani/d4a5f444b16eae57d2edfad6df774ead95c92fd6/tests/testdata/020-formation_CB5.mpt",
+      "size": 681331,
+      "sha256": "c323f95a3f5f1465d07ef8654a86df1de65e3a5dc3af11e7fb27d187f2ffe43e",
+      "source": "galvani",
+      "large": false
+    },
+    {
+      "id": "gcpl-mpr",
+      "filename": "v1150_GCPL.mpr",
+      "url": "https://media.githubusercontent.com/media/echemdata/galvani/d4a5f444b16eae57d2edfad6df774ead95c92fd6/tests/testdata/v1150/v1150_GCPL.mpr",
+      "size": 23857,
+      "sha256": "f814e04bd102db6211d933aecd2fb4f30f31b0a871ea26cce6c4a8900d2a85e3",
+      "source": "galvani",
+      "large": false
+    },
+    {
+      "id": "gcpl-mpt",
+      "filename": "v1150_GCPL.mpt",
+      "url": "https://media.githubusercontent.com/media/echemdata/galvani/d4a5f444b16eae57d2edfad6df774ead95c92fd6/tests/testdata/v1150/v1150_GCPL.mpt",
+      "size": 61681,
+      "sha256": "60ade6fe10af5ed71549d10a7f5abaed97694c2130e6f4365ffc85c24fa19c93",
+      "source": "galvani",
+      "large": false
+    },
+    {
+      "id": "sintef-gitt",
+      "filename": "SINTEF__NaCR32140-MP10-04__2025-08-25__GITT_0p05C_25degC__BioLogic.mpt",
+      "url": "https://zenodo.org/api/records/18986774/files/SINTEF__NaCR32140-MP10-04__2025-08-25__GITT_0p05C_25degC__BioLogic.mpt/content",
+      "size": 74699943,
+      "md5": "91854f0e74db18b13e640220bf8d42f0",
+      "source": "sintef",
+      "large": true,
+      "sha256": "b288583663055e2b3bc4558ffb0555b582f9a2a0040b570f31546401b8eef8a7"
+    },
+    {
+      "id": "sintef-cccv-outlier",
+      "filename": "SINTEF__NaCR32140-MP10-04__2025-08-25__CCCV_0p02C_25degC__BioLogic__Outlier_Bug.mpt",
+      "url": "https://zenodo.org/api/records/18986774/files/SINTEF__NaCR32140-MP10-04__2025-08-25__CCCV_0p02C_25degC__BioLogic__Outlier_Bug.mpt/content",
+      "size": 53617142,
+      "md5": "627f276281d2de9ad3ffe9494c7b115d",
+      "source": "sintef",
+      "large": true,
+      "sha256": "c762e951b2c4c83552ffca7e145777368940c7317e822bbd1da8cb4304d0d573"
+    }
+  ]
+}

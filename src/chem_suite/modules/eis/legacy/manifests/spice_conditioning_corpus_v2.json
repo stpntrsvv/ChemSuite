@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "name": "spice_conditioning_corpus_v2",
+  "frozen_at": "2026-07-19",
+  "realization_strategy": "global_error_budget",
+  "orders": [12, 16, 24, 32],
+  "pole_margin_decades": 1.0,
+  "spice_section_relative_tolerance": 0.002,
+  "criteria": {
+    "ecm_mean_error_percent": 1.0,
+    "ecm_max_error_percent": 10.0,
+    "realization_max_error_percent": 0.25,
+    "ngspice_max_error_percent": 1e-6,
+    "max_sections": 32,
+    "max_resistance_span_decades": 12.0,
+    "max_capacitance_span_decades": 12.0
+  },
+  "scenarios": [
+    {
+      "id": "cond_cal_cpe_low_alpha_wide_band",
+      "split": "calibration",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)",
+      "parameters": [2.0, 50.0, 0.0005, 0.61],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 1000000.0,
+      "points": 220
+    },
+    {
+      "id": "cond_cal_double_cpe_separated",
+      "split": "calibration",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)-p(R2,CPE1)",
+      "parameters": [2.0, 25.0, 0.004, 0.74, 120.0, 0.000001, 0.88],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 1000000.0,
+      "points": 220
+    },
+    {
+      "id": "cond_cal_double_cpe_close",
+      "split": "calibration",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)-p(R2,CPE1)",
+      "parameters": [0.8, 12.0, 0.0008, 0.81, 18.0, 0.0003, 0.76],
+      "frequency_min_hz": 0.001,
+      "frequency_max_hz": 1000000.0,
+      "points": 200
+    },
+    {
+      "id": "cond_cal_warburg_high_scale",
+      "split": "calibration",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)-W0",
+      "parameters": [20.0, 180.0, 0.00003, 0.79, 75.0],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 100000.0,
+      "points": 200
+    },
+    {
+      "id": "cond_cal_ws_broad",
+      "split": "calibration",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)-Ws0",
+      "parameters": [3.0, 55.0, 0.0002, 0.73, 30.0, 2.5],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 1000000.0,
+      "points": 220
+    },
+    {
+      "id": "cond_cal_l_wo_milliohm",
+      "split": "calibration",
+      "source_kind": "synthetic",
+      "circuit": "L0-R0-p(R1,CPE0)-Wo0",
+      "parameters": [0.0000003, 0.003, 0.012, 2.0, 0.77, 0.025, 18.0],
+      "frequency_min_hz": 0.001,
+      "frequency_max_hz": 1000000.0,
+      "points": 200
+    },
+    {
+      "id": "cond_hold_rc_micro_scale",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,C1)",
+      "parameters": [0.0001, 0.0005, 100.0],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 100000.0,
+      "points": 200
+    },
+    {
+      "id": "cond_hold_rc_mega_scale",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,C1)",
+      "parameters": [100000.0, 500000.0, 0.000000000001],
+      "frequency_min_hz": 0.001,
+      "frequency_max_hz": 10000000.0,
+      "points": 220
+    },
+    {
+      "id": "cond_hold_cpe_alpha_057",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)",
+      "parameters": [40.0, 900.0, 0.000008, 0.57],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 1000000.0,
+      "points": 220
+    },
+    {
+      "id": "cond_hold_cpe_alpha_094_low_scale",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)",
+      "parameters": [0.004, 0.03, 4.0, 0.94],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 1000000.0,
+      "points": 220
+    },
+    {
+      "id": "cond_hold_double_cpe_wide",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)-p(R2,CPE1)",
+      "parameters": [1.5, 9.0, 0.02, 0.69, 250.0, 0.0000003, 0.92],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 10000000.0,
+      "points": 240
+    },
+    {
+      "id": "cond_hold_double_cpe_inverted_scale",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)-p(R2,CPE1)",
+      "parameters": [8.0, 300.0, 0.000002, 0.86, 7.0, 0.008, 0.66],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 1000000.0,
+      "points": 220
+    },
+    {
+      "id": "cond_hold_double_cpe_compact",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)-p(R2,CPE1)",
+      "parameters": [0.5, 4.0, 0.001, 0.83, 6.0, 0.0004, 0.79],
+      "frequency_min_hz": 0.001,
+      "frequency_max_hz": 1000000.0,
+      "points": 200
+    },
+    {
+      "id": "cond_hold_warburg_micro_scale",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)-W0",
+      "parameters": [0.0008, 0.006, 20.0, 0.71, 0.0015],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 100000.0,
+      "points": 200
+    },
+    {
+      "id": "cond_hold_wo_long_tau",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "R0-p(R1,CPE0)-Wo0",
+      "parameters": [6.0, 70.0, 0.00008, 0.8, 45.0, 250.0],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 1000000.0,
+      "points": 220
+    },
+    {
+      "id": "cond_hold_l_ws_short_tau",
+      "split": "holdout",
+      "source_kind": "synthetic",
+      "circuit": "L0-R0-p(R1,CPE0)-Ws0",
+      "parameters": [0.000008, 12.0, 85.0, 0.00004, 0.75, 18.0, 0.004],
+      "frequency_min_hz": 0.0001,
+      "frequency_max_hz": 10000000.0,
+      "points": 240
+    },
+    {
+      "id": "real_lipo_0009_wo",
+      "split": "holdout",
+      "source_kind": "real_ecm",
+      "circuit": "L0-R0-p(R1,CPE0)-Wo0",
+      "parameters": [1.0897450207099222e-7, 0.002232554208043005, 0.0032532826966341715, 1.6515593683830077, 0.8081431765396851, 0.009375494784886054, 90.93839550530588],
+      "frequency_min_hz": 0.01,
+      "frequency_max_hz": 10000.0,
+      "points": 180,
+      "provenance": {"source_file": "VZ1_042_021_CVUT_D_0009_v1.csv", "fit_status": "OK", "kk_status": "PASS", "fit_error_percent": 1.5928727354407868}
+    },
+    {
+      "id": "real_lipo_0010_w",
+      "split": "holdout",
+      "source_kind": "real_ecm",
+      "circuit": "L0-R0-p(R1,CPE0)-W0",
+      "parameters": [1.08862757631567e-7, 0.0022341724636026432, 0.0031603393962865876, 1.6182174199413535, 0.8116032168116792, 0.0007236452380767639],
+      "frequency_min_hz": 0.01,
+      "frequency_max_hz": 10000.0,
+      "points": 180,
+      "provenance": {"source_file": "VZ1_042_021_CVUT_D_0010_v1.csv", "fit_status": "OK", "kk_status": "PASS", "fit_error_percent": 1.673243280675863}
+    },
+    {
+      "id": "real_lipo_0011_w",
+      "split": "holdout",
+      "source_kind": "real_ecm",
+      "circuit": "L0-R0-p(R1,CPE0)-W0",
+      "parameters": [1.08747557289484e-7, 0.002238618148972139, 0.0030524114885371522, 1.5525657780571602, 0.8181046336332478, 0.0007770432441077367],
+      "frequency_min_hz": 0.01,
+      "frequency_max_hz": 10000.0,
+      "points": 180,
+      "provenance": {"source_file": "VZ1_042_021_CVUT_D_0011_v1.csv", "fit_status": "OK", "kk_status": "WARN", "fit_error_percent": 1.7295964381920992}
+    },
+    {
+      "id": "real_lipo_0012_w",
+      "split": "holdout",
+      "source_kind": "real_ecm",
+      "circuit": "L0-R0-p(R1,CPE0)-W0",
+      "parameters": [1.08672125209313e-7, 0.0022430642096198145, 0.002942059431693285, 1.4893404426896177, 0.8247666695378367, 0.0008459319199455558],
+      "frequency_min_hz": 0.01,
+      "frequency_max_hz": 10000.0,
+      "points": 180,
+      "provenance": {"source_file": "VZ1_042_021_CVUT_D_0012_v1.csv", "fit_status": "OK", "kk_status": "WARN", "fit_error_percent": 1.9432167574491621}
+    },
+    {
+      "id": "real_lipo_0014_w",
+      "split": "holdout",
+      "source_kind": "real_ecm",
+      "circuit": "L0-R0-p(R1,CPE0)-W0",
+      "parameters": [1.0871885672574e-7, 0.0022406127052223964, 0.0027425611853242222, 1.5079188459639012, 0.8253300285821815, 0.0010334566857777819],
+      "frequency_min_hz": 0.01,
+      "frequency_max_hz": 10000.0,
+      "points": 180,
+      "provenance": {"source_file": "VZ1_042_021_CVUT_D_0014_v1.csv", "fit_status": "OK", "kk_status": "WARN", "fit_error_percent": 2.0710452391913026}
+    },
+    {
+      "id": "real_lipo_0015_wo",
+      "split": "holdout",
+      "source_kind": "real_ecm",
+      "circuit": "L0-R0-p(R1,CPE0)-Wo0",
+      "parameters": [1.09197803912624e-7, 0.0022158765095011863, 0.002831819059621687, 1.9155823617539203, 0.7904967595192204, 0.011545079867627308, 94.00750668649019],
+      "frequency_min_hz": 0.01,
+      "frequency_max_hz": 10000.0,
+      "points": 180,
+      "provenance": {"source_file": "VZ1_042_021_CVUT_D_0015_v1.csv", "fit_status": "OK", "kk_status": "PASS", "fit_error_percent": 1.483474754864111}
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chem-suite"
+version = "0.1.0"
+description = "Modular electrochemistry desktop and isolated analysis jobs"
+requires-python = ">=3.12"
+license = "GPL-3.0-or-later"
+dependencies = []
+
+[project.optional-dependencies]
+desktop = ["PySide6>=6.8,<7", "pyqtgraph>=0.14,<1"]
+eis = ["numpy>=2,<3", "scipy>=1.14,<2", "impedance==1.7.1", "pandas>=2.2,<4"]
+biologic = ["galvani==0.5.0"]
+export = ["openpyxl>=3.1,<4", "matplotlib>=3.9,<4"]
+cycling = []
+build = ["pyinstaller==6.21.0", "pillow>=12,<13"]
+dev = ["pytest>=8,<10", "ruff>=0.12,<1"]
+
+[project.scripts]
+chem-suite = "chem_suite.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"chem_suite.modules.eis.legacy" = ["schemas/*.json", "manifests/*.json"]
+"chem_suite.desktop" = ["assets/*.svg", "assets/*.png", "assets/*.ico", "assets/*.icns"]
+"chem_suite.visualization" = ["julia/*.jl", "julia/*.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+exclude = ["src/chem_suite/modules/eis/legacy"]
+force-exclude = true
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
