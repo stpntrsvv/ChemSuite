@@ -3,10 +3,12 @@ import argparse
 import json
 from pathlib import Path
 import tempfile
+import sys
 import time
 
 
 def main(argv=None):
+    from chem_suite import __version__
     from PySide6.QtCore import QTimer
     from PySide6.QtNetwork import QSslSocket
     from chem_suite.desktop.app import create_application
@@ -24,7 +26,8 @@ def main(argv=None):
     timer.setInterval(20)
     timer.timeout.connect(lambda: beats.append(time.monotonic()))
     timer.start()
-    report = {'status':'failed', 'tls':QSslSocket.supportsSsl()}
+    report = {'status':'failed', 'tls':QSslSocket.supportsSsl(),
+              'application_version':__version__, 'frozen':bool(getattr(sys,'frozen',False))}
     with tempfile.TemporaryDirectory(prefix='ChemSuite-update-smoke-') as folder:
         client = UpdateClient(folder, version=args.from_version, target=args.target)
         client.checked.connect(outcomes.append)

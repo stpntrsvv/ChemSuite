@@ -49,6 +49,13 @@ def main():
     result = json.loads(report.read_text())
     if result.get("status") != "passed" or result.get("frozen") is not True:
         raise RuntimeError("Packaged acceptance did not pass")
+    if os.environ.get("CHEMSUITE_VERIFY_PUBLIC_FEED") == "1":
+        feed_report = release / "update-feed-acceptance.json"
+        run(executable, "--update-smoke-test", "--report", feed_report,
+            "--from-version", "0.1.0", env=environment, timeout=90)
+        feed = json.loads(feed_report.read_text(encoding="utf-8"))
+        if feed.get("status") != "passed" or feed.get("frozen") is not True or feed.get("application_version") != __version__:
+            raise RuntimeError("Native public updater feed acceptance did not pass")
     label = f"ChemSuite-{__version__}-" + ("macos-" + platform.machine() if sys.platform == "darwin" else "windows-x64")
     # Supply corresponding GPL source and notices with every binary distribution.
     source = build / "source/ChemSuite"

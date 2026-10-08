@@ -33,7 +33,8 @@ Save the current session before restarting: this version does not automatically 
 open tabs. The workspace, preferences, source data and saved scientific results are
 outside application installation directories and are not removed by the updater.
 
-`0.1.0` predates the updater: install `0.1.1` manually once. Further versions use this flow.
+`0.1.0` predates the updater; `0.1.1` has a Qt redirect bug. Install `0.1.2` manually once.
+Further versions use this flow.
 Automatic checks use no GitHub token and send only a versioned User-Agent, never lab data.
 Update preferences and installers live in the user-data `updates` folder alongside,
 not inside, the calculation workspace. Cancelling a download removes its partial file.
@@ -64,5 +65,6 @@ installers: ship a new version. Main/PR builds continue to supply Actions artifa
 Public Releases assets are the update channel, not expiring Actions artifacts.
 
 The native Mac/Windows version resources are generated from the package version.
-Release integrity and tag/platform checks run in CI. `tools/prepare_release.py` and
+Release integrity and tag/platform checks run in CI. Native builds also test the real
+public feed and GitHub-to-CDN redirect before publication. `tools/prepare_release.py` and
 `tools/publish_release.py` implement the validation and draft-first publication.

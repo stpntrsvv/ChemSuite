@@ -110,7 +110,7 @@ class UpdateClient(QObject):
         if not trusted_url(resolved, cdn=True):
             self._fail("Invalid update redirect")
         else:
-            reply.redirectAllowed()
+            reply.redirectAllowed.emit()
 
     def _read(self, reply):
         if reply is not self._reply:

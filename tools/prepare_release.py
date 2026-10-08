@@ -24,6 +24,11 @@ def prepare(inputs, destination, tag, commit):
             if report.get('status') != 'passed' or report.get('frozen') is not True or report.get('version') != version:
                 raise ValueError('Packaged acceptance did not pass')
             shutil.copy2(source / report_name, destination / (target + '-' + report_name))
+        feed_path = source / 'update-feed-acceptance.json'
+        feed = json.loads(feed_path.read_text(encoding='utf-8'))
+        if feed.get('status') != 'passed' or feed.get('tls') is not True or feed.get('frozen') is not True or feed.get('application_version') != version or feed.get('target') != target:
+            raise ValueError('Native public updater feed acceptance did not pass')
+        shutil.copy2(feed_path, destination / (target + '-update-feed-acceptance.json'))
         expected_hashes = {}
         for line in (source / 'SHA256SUMS').read_text(encoding='utf-8').splitlines():
             checksum, name = line.split('  ',1)

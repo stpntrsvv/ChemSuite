@@ -18,6 +18,7 @@ class Reply(QObject):
     readyRead = Signal()
     finished = Signal()
     redirected = Signal(QUrl)
+    redirectAllowed = Signal()
 
     def __init__(self, request, content, status=200, error=QNetworkReply.NoError, *, delay=1, chunk=128*1024):
         super().__init__()
@@ -27,6 +28,7 @@ class Reply(QObject):
         self.buffer = bytearray()
         self.aborted = False
         self.allowed = False
+        self.redirectAllowed.connect(lambda: setattr(self, 'allowed', True))
         QTimer.singleShot(delay, self.deliver)
 
     def deliver(self):
@@ -70,9 +72,6 @@ class Reply(QObject):
 
     def deleteLater(self):
         pass  # Keep a reference to inject hostile late signals after cancellation.
-
-    def redirectAllowed(self):
-        self.allowed = True
 
 
 class Manager:

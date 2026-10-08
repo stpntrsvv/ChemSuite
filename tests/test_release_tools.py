@@ -21,6 +21,8 @@ def bundles(folder):
         (dest/'build-info.json').write_text(json.dumps({'version':__version__,'commit':'abc123'}))
         report = {'version':__version__, 'status':'passed', 'frozen':True}
         (dest/'acceptance.json').write_text(json.dumps(report))
+        (dest/'update-feed-acceptance.json').write_text(json.dumps({'status':'passed','frozen':True,'tls':True,
+            'application_version':__version__, 'target':target}))
         if target == 'windows-x64':
             (dest/'installed-acceptance.json').write_text(json.dumps(report))
         (dest/installer_name(__version__,target)).write_bytes(b'installer-'+target.encode())
@@ -47,7 +49,7 @@ def test_release_combines_both_verified_platforms_and_source(tmp_path):
         assert digest == hashlib.sha256((output/name).read_bytes()).hexdigest()
 
 
-@pytest.mark.parametrize('fault', ['commit','version','failed','unfrozen','installed','missing-source','checksum','traversal'])
+@pytest.mark.parametrize('fault', ['commit','version','failed','unfrozen','installed','missing-source','checksum','traversal','feed'])
 def test_release_rejects_incomplete_or_mismatched_builds(tmp_path, fault):
     bundles(tmp_path/'inputs')
     folder = tmp_path/'inputs/ChemSuite-Windows-x64'
@@ -64,6 +66,8 @@ def test_release_rejects_incomplete_or_mismatched_builds(tmp_path, fault):
         next(folder.glob('*-source.zip')).unlink()
     elif fault == 'checksum':
         (folder/installer_name(__version__,'windows-x64')).write_bytes(b'corrupt')
+    elif fault == 'feed':
+        (folder/'update-feed-acceptance.json').write_text('{}')
     elif fault == 'traversal':
         (folder/'SHA256SUMS').write_text('0'*64+'  ../escape.exe')
     with pytest.raises(ValueError):
