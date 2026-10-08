@@ -2,6 +2,7 @@ name: Desktop builds
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -33,10 +34,13 @@ jobs:
           python-version: '3.14'
           cache: pip
           cache-dependency-path: requirements-lock.txt
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: python tools/release_metadata.py "${{ github.ref_name }}"
       - name: Install dependencies
         run: python -m pip install -r requirements-lock.txt -e ".[desktop,eis,cycling,biologic,export,dev,build]"
       - name: Check isolation, numerical baselines and Qt heartbeat
-        run: python -m pytest -q tests/test_isolation.py tests/test_science.py tests/test_cycling.py tests/test_qt.py::test_qt_heartbeat_survives_cpu_bound_job_and_crash
+        run: python -m pytest -q tests/test_updates.py tests/test_updates_qt.py tests/test_release_tools.py tests/test_isolation.py tests/test_science.py tests/test_cycling.py tests/test_qt.py::test_qt_heartbeat_survives_cpu_bound_job_and_crash
       - name: Install Windows installer compiler
         if: runner.os == 'Windows'
         shell: pwsh
@@ -62,3 +66,29 @@ jobs:
             build/desktop/release/*.json
             build/desktop/work/**/warn-*.txt
           if-no-files-found: ignore
+
+  publish:
+    name: Publish verified release
+    needs: desktop
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ChemSuite-*
+          path: downloaded
+      - name: Validate both platforms and create updater manifest
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python tools/prepare_release.py --inputs downloaded --destination release --tag "$RELEASE_TAG" --commit "$GITHUB_SHA"
+      - name: Upload draft assets and publish last
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python tools/publish_release.py --repository "$GITHUB_REPOSITORY" --tag "$RELEASE_TAG" --directory release

@@ -1,8 +1,10 @@
 # PyInstaller native onedir bundles. Scientific handlers remain lazily imported.
 from pathlib import Path
+import ast
 import sys
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files, copy_metadata
 root = Path(SPECPATH).parent
+app_version = ast.literal_eval((root / "src/chem_suite/__init__.py").read_text().split("__version__ = ")[1].strip())
 assets = root / "src/chem_suite/desktop/assets"
 datas = collect_data_files("chem_suite")
 datas += [(str(root / "examples"), "acceptance-data"), (str(root / "LICENSE"), "legal"),
@@ -23,7 +25,7 @@ console = EXE(pyz, a.scripts, options, exclude_binaries=True, name="chem-suite-c
 if sys.platform == "darwin":
     collection = COLLECT(gui, a.binaries, a.datas, name="ChemSuite")
     app = BUNDLE(collection, name="Chem Suite.app", icon=icon, bundle_identifier="org.chemsuite.desktop",
-                 info_plist={"CFBundleDisplayName": "Chem Suite", "CFBundleShortVersionString": "0.1.0",
-                             "CFBundleVersion": "0.1.0", "NSHighResolutionCapable": True})
+                 info_plist={"CFBundleDisplayName": "Chem Suite", "CFBundleShortVersionString": app_version,
+                             "CFBundleVersion": app_version, "NSHighResolutionCapable": True})
 else:
     collection = COLLECT(gui, console, a.binaries, a.datas, name="ChemSuite")

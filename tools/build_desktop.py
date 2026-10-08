@@ -1,6 +1,5 @@
 """Build, verify the packaged executable, then create distributable artifacts."""
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -26,6 +25,9 @@ def main():
     build = ROOT / "build/desktop"
     release = build / "release"
     release.mkdir(parents=True, exist_ok=True)
+    from release_metadata import windows_version, validate_version, sha256
+    validate_version()
+    (ROOT / "packaging/windows-version.txt").write_text(windows_version(__version__), encoding="utf-8")
     build_environment = dict(os.environ, PYINSTALLER_CONFIG_DIR=str(build / "cache"))
     run(sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
         "--distpath", build / "dist", "--workpath", build / "work", ROOT / "packaging/chemsuite.spec", cwd=ROOT, env=build_environment)
@@ -85,13 +87,17 @@ def main():
             run(installer, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", f"/DIR={installed}", timeout=120)
             run(installed / "ChemSuite.exe", "--self-test", "--report", release / "installed-acceptance.json",
                 env=environment, timeout=240)
+    commit = os.environ.get("GITHUB_SHA")
+    if not commit:
+        identity = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
+        commit = identity.stdout.strip() if identity.returncode == 0 else "local"
     info = {"version": __version__, "platform": sys.platform, "architecture": platform.machine(),
-            "python": sys.version, "commit": os.environ.get("GITHUB_SHA", "local"),
+            "python": sys.version, "commit": commit,
             "signed": False, "julia_bundled": False}
     (release / "build-info.json").write_text(json.dumps(info, indent=2), encoding="utf-8")
     freeze = subprocess.check_output([sys.executable, "-m", "pip", "freeze"], text=True)
     (release / "dependencies.txt").write_text(freeze, encoding="utf-8")
-    checksum = "".join(hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.name + "\n"
+    checksum = "".join(sha256(p) + "  " + p.name + "\n"
                        for p in sorted(release.iterdir()) if p.is_file() and p.name != "SHA256SUMS")
     (release / "SHA256SUMS").write_text(checksum, encoding="utf-8")
     print(release, flush=True)

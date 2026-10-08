@@ -21,7 +21,7 @@ from chem_suite.core.artifacts import write_json
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, workspace, *, registry=None):
+    def __init__(self, workspace, *, registry=None, auto_update_check=True):
         super().__init__()
         self.setWindowTitle("Chem Suite")
         self.resize(1280, 820)
@@ -83,6 +83,8 @@ class MainWindow(QMainWindow):
         self.about_action = QAction("О программе", self)
         self.about_action.triggered.connect(self.show_about)
         self.about_menu.addAction(self.about_action)
+        from chem_suite.desktop.updates import UpdatesController
+        self.updates = UpdatesController(self, schedule=auto_update_check)
         self.module_selector.currentIndexChanged.connect(self.select_module)
         for panel in self.panels:
             panel.state_changed.connect(self.sync_actions)
@@ -229,6 +231,8 @@ class MainWindow(QMainWindow):
         for key, action in self.language_actions.items():
             action.setChecked(key == self.language)
         self.select_module(self.module_selector.currentIndex())
+        if self.updates.dialog is not None:
+            self.updates.dialog.refresh()
         if persist:
             write_json(self.preferences_path, {"language": self.language})
 
@@ -241,6 +245,7 @@ class MainWindow(QMainWindow):
                           "<p>GNU GPL v3 or later · github.com/stpntrsvv/ChemSuite</p>")
 
     def closeEvent(self, event):
+        self.updates.close()
         if self.qt_translator is not None:
             QApplication.instance().removeTranslator(self.qt_translator)
             self.qt_translator = None

@@ -22,6 +22,7 @@ def fault_job(request, context):
             command.append(str(Path(__file__).resolve().parents[3] / "tools/launcher.py"))
         child = subprocess.Popen(command + ["--acceptance-sleep"])
         context.artifact("child.pid").write_text(str(child.pid))
+    assert sys.stdout is not None and sys.stderr is not None, "Frozen workers need usable standard streams"
     context.progress(.1, "entered")
     end = time.monotonic() + request.config.get("seconds", 0)
     value = 0
@@ -67,7 +68,7 @@ def run_checks(folder):
     registry = builtins()
     registry.register(ModuleSpec("acceptance", "Acceptance", "1", (
         ActionSpec("run", "Run", "chem_suite.distribution.acceptance:fault_job"),), visible=False))
-    window = MainWindow(folder / "workspace", registry=registry)
+    window = MainWindow(folder / "workspace", registry=registry, auto_update_check=False)
     window.show()
     samples = []
     timer = QTimer()
@@ -97,6 +98,33 @@ def run_checks(folder):
             window.set_language(language, persist=False)
             assert window.clear_action.text() == clear
         checks.append("qt-panels-ru-en-icon")
+        from PySide6.QtNetwork import QSslSocket
+        from chem_suite.updates.protocol import DownloadSink, UpdateError, UpdateOffer, platform_key
+        assert QSslSocket.supportsSsl(), "Packaged updater needs a working TLS backend"
+        for language, label in (("en", "Check for updates…"), ("ru", "Проверить обновления…")):
+            window.set_language(language, persist=False)
+            assert window.updates.check_action.text() == label
+        content = b"offline packaged updater acceptance"
+        offer = UpdateOffer("0.1.2", platform_key(), "test-installer", "https://github.com/test", len(content),
+                            hashlib.sha256(content).hexdigest(), "https://github.com/test", "Changes")
+        sink = DownloadSink(folder / "update-test", offer)
+        sink.write(content)
+        assert sink.finish().read_bytes() == content
+        sink = DownloadSink(folder / "update-test", offer)
+        sink.write(content[:5])
+        sink.abort()
+        try:
+            sink.finish()
+        except UpdateError:
+            pass
+        else:
+            raise AssertionError("Cancelled download became ready")
+        assert not list((folder / "update-test").rglob("*.part"))
+        window.session_job = "acceptance-session"
+        assert not window.updates.can_install()
+        window.session_job = None
+        assert window.updates.can_install()
+        checks.append("updates-tls-integrity-cancellation-busy-guard-ru-en")
         base = Path(sys._MEIPASS) / "acceptance-data" if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[3] / "examples"
         eis_input = base / "eis_double_cpe.txt"
         digest = hashlib.sha256(eis_input.read_bytes()).hexdigest()

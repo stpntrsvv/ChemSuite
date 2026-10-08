@@ -706,3 +706,59 @@ EN['Пауза до циклирования'] = 'Rest before cycling'
 
 RU['Yes'], RU['No'] = 'Да', 'Нет'
 EN['Да'], EN['Нет'] = 'Yes', 'No'
+
+_UPDATES = """
+Обновление программы|Software update
+Проверить обновления…|Check for updates…
+Автоматически проверять обновления|Automatically check for updates
+Доступна новая версия|New version available
+Страница релиза|Release page
+Открыть страницу релиза|Open release page
+Позже|Later
+Отменить скачивание|Cancel download
+Скачать обновление|Download update
+Установить обновление|Install update
+Обновление скачивается…|Downloading update…
+Проверяем скачанное обновление…|Verifying downloaded update…
+Обновление готово. Завершите текущий расчёт перед установкой.|The update is ready. Finish the current analysis before installing.
+Обновление готово. Сохраните сессию перед перезапуском.|The update is ready. Save your session before restarting.
+Ваши данные и результаты анализа остаются в своих папках.|Your data and analysis results stay in their current folders.
+Установите готовое приложение, чтобы получать обновления здесь.|Install the packaged application to receive updates here.
+Релизы ещё не опубликованы.|No releases have been published yet.
+У вас установлена последняя версия.|You are using the latest version.
+Для этой платформы нет пакета обновления.|No update package is available for this platform.
+Не удалось проверить обновления|Update check failed
+Не удалось обновить программу|Update failed
+Превышен лимит запросов GitHub. Попробуйте позже.|GitHub request limit reached
+Сервер обновлений не ответил вовремя.|Update request timed out
+Файл обновления не прошёл проверку целостности.|Update download failed integrity verification
+Не удалось открыть установщик обновления.|Could not open the update installer
+Не удалось подключиться к серверу обновлений|Update connection failed
+Некорректный адрес обновления|Invalid update URL
+Некорректное перенаправление загрузки|Invalid update redirect
+Слишком большой ответ сервера обновлений|Update metadata is too large
+Некорректная версия релиза|Invalid release version
+Релиз не является стабильной опубликованной версией|Not a stable published release
+Тег релиза должен начинаться с v|Release tags must start with v
+Некорректный список файлов релиза|Invalid release assets
+Файл релиза отсутствует или указан несколько раз|Release asset is missing or ambiguous
+Некорректный размер или статус файла релиза|Invalid release asset size or state
+Некорректный адрес файла релиза|Invalid release asset URL
+Некорректная контрольная сумма файла релиза|Invalid release asset checksum
+Некорректная контрольная сумма обновления|Invalid update checksum
+Слишком большой манифест обновления|Update manifest is too large
+Размер манифеста не совпадает с данными релиза|Update manifest size differs from release metadata
+Контрольная сумма манифеста не совпадает с данными релиза|Update manifest checksum differs from release metadata
+Некорректный манифест обновления|Invalid update manifest
+Файл обновления не совпадает с данными релиза|Update artifact differs from release metadata
+Контрольная сумма обновления не совпадает с данными релиза|Update checksum differs from release metadata
+Платформа не поддерживается обновлением|Unsupported update platform
+Скачанный файл превышает ожидаемый размер|Update download exceeded its expected size
+Скачивание не выполняется|Download is not active
+Скачивание отменено|Download was cancelled
+Сейчас откроется установщик, а Chem Suite закроется. Сначала сохраните сессию.|The installer will open and Chem Suite will close. Save your session first.
+Сейчас откроется образ диска, а Chem Suite закроется. Перетащите Chem Suite в «Программы» и подтвердите замену. Сначала сохраните сессию.|The disk image will open and Chem Suite will close. Drag Chem Suite to Applications and confirm replacement. Save your session first.
+"""
+for _pair in _UPDATES.strip().splitlines():
+    _ru, _en = _pair.rsplit('|', 1)
+    RU[_en], EN[_ru] = _ru, _en

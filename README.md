@@ -131,3 +131,7 @@ Cycling поддерживает независимые эксперименты
 ## Desktop applications
 
 Native macOS arm64 and Windows x64 packaging and packaged acceptance checks: [docs/desktop-builds.md](docs/desktop-builds.md). GitHub Actions: https://github.com/stpntrsvv/ChemSuite/actions. Builds are unsigned previews; Julia/Makie remain optional.
+
+## Обновления
+
+Готовое приложение проверяет стабильные [GitHub Releases](https://github.com/stpntrsvv/ChemSuite/releases). В меню «Справка» есть ручная проверка и выключатель автоматической проверки. Скачивание не блокирует расчёты; установка доступна после их завершения. Подробности и выпуск новых версий: [docs/updates.md](docs/updates.md).
