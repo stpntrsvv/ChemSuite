@@ -1,10 +1,24 @@
 """Opt-in real-feed acceptance; no installer download, launch or settings changes."""
 import argparse
 import json
+import os
 from pathlib import Path
 import tempfile
 import sys
 import time
+
+
+def acceptance_manager(parent=None):
+    """CI-only API authentication; never attach credentials to installer/CDN requests."""
+    from PySide6.QtNetwork import QNetworkAccessManager
+    from chem_suite.updates.protocol import API_URL
+    class AcceptanceManager(QNetworkAccessManager):
+        def get(self, request):
+            token = os.environ.get('CHEMSUITE_TEST_GITHUB_TOKEN')
+            if token and request.url().toString() == API_URL:
+                request.setRawHeader(b'Authorization', ('Bearer ' + token).encode('ascii'))
+            return super().get(request)
+    return AcceptanceManager(parent)
 
 
 def main(argv=None):
@@ -29,7 +43,8 @@ def main(argv=None):
     report = {'status':'failed', 'tls':QSslSocket.supportsSsl(),
               'application_version':__version__, 'frozen':bool(getattr(sys,'frozen',False))}
     with tempfile.TemporaryDirectory(prefix='ChemSuite-update-smoke-') as folder:
-        client = UpdateClient(folder, version=args.from_version, target=args.target)
+        manager = acceptance_manager(app)
+        client = UpdateClient(folder, version=args.from_version, target=args.target, manager=manager)
         client.checked.connect(outcomes.append)
         client.failed.connect(errors.append)
         client.check(manual=True)

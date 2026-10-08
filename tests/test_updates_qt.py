@@ -339,3 +339,25 @@ def test_final_reply_larger_than_read_buffer_is_drained_before_validation(app, c
     wait(app, lambda: not client.busy)
     assert client.state == 'ready'
     assert client.path.read_bytes() == content
+
+
+def test_ci_token_is_used_only_for_the_exact_api_url(app, monkeypatch):
+    from PySide6.QtNetwork import QNetworkAccessManager
+    from chem_suite.distribution.update_smoke import acceptance_manager
+    from chem_suite.updates.protocol import API_URL
+    requests = []
+    monkeypatch.setenv('CHEMSUITE_TEST_GITHUB_TOKEN', 'ci-test-sentinel')
+    monkeypatch.setattr(QNetworkAccessManager, 'get', lambda self,request: requests.append(request))
+    manager = acceptance_manager(app)
+    manager.get(QNetworkRequest(QUrl(API_URL)))
+    manager.get(QNetworkRequest(QUrl('https://github.com/stpntrsvv/ChemSuite/releases/download/v0.1.2/ChemSuite-update.json')))
+    manager.get(QNetworkRequest(QUrl('https://release-assets.githubusercontent.com/asset')))
+    assert requests[0].rawHeader('Authorization') == b'Bearer ci-test-sentinel'
+    assert all(not request.rawHeader('Authorization') for request in requests[1:])
+
+
+def test_normal_update_client_does_not_read_ci_credentials(app, clients, monkeypatch):
+    monkeypatch.setenv('CHEMSUITE_TEST_GITHUB_TOKEN', 'ci-test-sentinel')
+    client, manager = clients([{'content': b'{}', 'status':404}])
+    client.check()
+    assert not manager.replies[0].request.rawHeader('Authorization')

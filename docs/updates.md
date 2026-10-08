@@ -68,3 +68,8 @@ The native Mac/Windows version resources are generated from the package version.
 Release integrity and tag/platform checks run in CI. Native builds also test the real
 public feed and GitHub-to-CDN redirect before publication. `tools/prepare_release.py` and
 `tools/publish_release.py` implement the validation and draft-first publication.
+
+The opt-in native feed acceptance uses the read-only Actions token only for the exact
+GitHub latest-release API URL, avoiding unauthenticated limits on shared runner IPs.
+Credentials are excluded from scientific acceptance/worker environments and never
+attached to release asset or CDN requests. Normal GUI updates do not read a token.

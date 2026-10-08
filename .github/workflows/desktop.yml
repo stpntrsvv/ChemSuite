@@ -50,6 +50,8 @@ jobs:
             choco install innosetup --yes --no-progress
           }
       - name: Build and test standalone application
+        env:
+          CHEMSUITE_TEST_GITHUB_TOKEN: ${{ github.token }}
         run: python tools/build_desktop.py
       - name: Upload verified applications and source
         uses: actions/upload-artifact@v7

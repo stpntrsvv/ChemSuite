@@ -29,6 +29,7 @@ def main():
     validate_version()
     (ROOT / "packaging/windows-version.txt").write_text(windows_version(__version__), encoding="utf-8")
     build_environment = dict(os.environ, PYINSTALLER_CONFIG_DIR=str(build / "cache"))
+    build_environment.pop("CHEMSUITE_TEST_GITHUB_TOKEN", None)
     run(sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
         "--distpath", build / "dist", "--workpath", build / "work", ROOT / "packaging/chemsuite.spec", cwd=ROOT, env=build_environment)
     bundle = build / "dist/Chem Suite.app" if sys.platform == "darwin" else build / "dist/ChemSuite"
@@ -36,6 +37,7 @@ def main():
     environment = dict(os.environ)
     environment["QT_QPA_PLATFORM"] = "offscreen"
     environment.pop("PYTHONPATH", None)
+    environment.pop("CHEMSUITE_TEST_GITHUB_TOKEN", None)
     # Start outside the project, with no installed Python environment on the path.
     import tempfile
     report = release / "acceptance.json"
@@ -51,8 +53,12 @@ def main():
         raise RuntimeError("Packaged acceptance did not pass")
     if os.environ.get("CHEMSUITE_VERIFY_PUBLIC_FEED") == "1":
         feed_report = release / "update-feed-acceptance.json"
+        feed_environment = dict(environment)
+        test_token = os.environ.get("CHEMSUITE_TEST_GITHUB_TOKEN")
+        if test_token:
+            feed_environment["CHEMSUITE_TEST_GITHUB_TOKEN"] = test_token
         run(executable, "--update-smoke-test", "--report", feed_report,
-            "--from-version", "0.1.0", env=environment, timeout=90)
+            "--from-version", "0.1.0", env=feed_environment, timeout=90)
         feed = json.loads(feed_report.read_text(encoding="utf-8"))
         if feed.get("status") != "passed" or feed.get("frozen") is not True or feed.get("application_version") != __version__:
             raise RuntimeError("Native public updater feed acceptance did not pass")
