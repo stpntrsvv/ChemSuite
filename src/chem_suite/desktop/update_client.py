@@ -142,6 +142,11 @@ class UpdateClient(QObject):
         self._read(reply)
         if reply is not self._reply:
             return
+        if reply.bytesAvailable():
+            # Qt buffer limits are approximate: drain the final bytes over more
+            # event-loop turns before validating, without blocking the UI.
+            QTimer.singleShot(0, lambda r=reply: self._finish(r))
+            return
         status = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
         error = reply.error()
         detail = reply.errorString()
