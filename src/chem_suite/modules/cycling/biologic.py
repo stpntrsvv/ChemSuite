@@ -13,6 +13,7 @@ from .models import CyclingStep
 
 VOLTAGES = ("Ecell/V", "Ewe-Ece/V", "Ewe/V", "<Ewe>/V", "<Ewe/V>", "Ece/V")
 CURRENTS = {"<I>/A": 1.0, "<I>/mA": 0.001, "I/A": 1.0, "I/mA": 0.001}
+CHARGE_INCREMENTS = ("dq/mA.h", "dQ/mA.h")
 
 
 def number(value):
@@ -50,6 +51,9 @@ def columns(names, voltage_channel, current_channel="auto"):
         if current_channel == "auto"
         else current_channel
     )
+    if current_channel in {"auto", "dq/dt"} and current not in CURRENTS:
+        if "mode" in names and any(name in names for name in CHARGE_INCREMENTS):
+            return voltage, "dq/dt"
     if current not in names or current not in CURRENTS:
         raise ValueError(
             "BioLogic cycling requires signed I/A, <I>/A, I/mA or <I>/mA (not |I|); "
@@ -77,18 +81,33 @@ def steps_from_rows(
         if voltage_kind != "auto"
         else ("cell" if voltage in {"Ecell/V", "Ewe-Ece/V"} else "electrode")
     )
+    derived = current == "dq/dt"
+    charge_column = next((name for name in CHARGE_INCREMENTS if name in names), None)
     steps, previous_key, last_time, active = [], None, None, None
     previous_declared = None
     for index, row in enumerate(rows, 1):
         if index % 1000 == 0:
             context.check_cancelled()
-        t, v, i = number(row["time/s"]), number(row[voltage]), number(row[current]) * CURRENTS[current]
+        t, v = number(row["time/s"]), number(row[voltage])
         if last_time is not None and t < last_time:
             raise ValueError(f"BioLogic time/s runs backwards at data row {index}")
+        interval_start = last_time
+        if derived:
+            dq = number(row[charge_column])
+            dt = t - last_time if last_time is not None else 0.0
+            if dt == 0 and dq != 0:
+                raise ValueError(
+                    "BioLogic nonzero charge has no positive time interval; export MPT from EC-Lab"
+                )
+            i = 3.6 * dq / dt if dt else 0.0  # mAh / seconds -> amperes
+            if not math.isfinite(i):
+                raise ValueError("BioLogic contains a nonfinite measurement")
+        else:
+            i = number(row[current]) * CURRENTS[current]
         last_time = t
         mode = integer(row["mode"], "mode") if "mode" in names else None
         # EC-Lab mode=3 is open circuit; measured residual current is not a charge.
-        if mode == 3:
+        if mode == 3 and not derived:
             i = 0.0
         direction = "ch" if i > rest_threshold_a else "dch" if i < -rest_threshold_a else "rest"
         instrument_cycle = (
@@ -123,12 +142,16 @@ def steps_from_rows(
                 instrument_mode=mode,
                 instrument_cycle=instrument_cycle,
                 current_channel=current,
+                charge_increment_mah=[] if derived else None,
+                interval_start_s=interval_start if derived else None,
             )
             steps.append(active)
             previous_key = key
         active.time_s.append(t)
         active.voltage_v.append(v)
         active.current_a.append(i)
+        if derived:
+            active.charge_increment_mah.append(dq)
         if "error" in names and integer(row["error"], "error"):
             raise ValueError(f"BioLogic instrument error flag at data row {index}")
     if not steps:
@@ -191,10 +214,17 @@ def read_mpr(path, context, **settings):
             flags[name] = recording.get_flag(name)
             names.append(name)
 
+    needed = {"time/s", "cycle number", "Ns", "half cycle", "mode", "error"}
+    needed.update(VOLTAGES)
+    needed.update(CURRENTS)
+    needed.update(CHARGE_INCREMENTS)
+    fields = [name for name in recording.data.dtype.names if name in needed]
+
     def rows():
         for index, row in enumerate(recording.data):
             yield {
-                **{name: row[name].item() for name in recording.data.dtype.names},
+                # Other MPR columns need not be materialized for each record.
+                **{name: row[name].item() for name in fields},
                 **{name: values[index].item() for name, values in flags.items()},
             }
 

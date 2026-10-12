@@ -68,7 +68,8 @@ def run_checks(folder):
     registry = builtins()
     registry.register(ModuleSpec("acceptance", "Acceptance", "1", (
         ActionSpec("run", "Run", "chem_suite.distribution.acceptance:fault_job"),), visible=False))
-    window = MainWindow(folder / "workspace", registry=registry, auto_update_check=False)
+    window = MainWindow(folder / "workspace", registry=registry, auto_update_check=False,
+                        update_directory=folder / 'updates', restore_update_session=False)
     window.show()
     samples = []
     timer = QTimer()
@@ -146,12 +147,47 @@ def run_checks(folder):
             assert abs(row["charge_mAh"] - 15) < 1e-5
             assert abs(row["discharge_mAh"] - 8) < 1e-5
             checks.append("biologic-" + suffix)
+        intervals, payload = job('cycling', 'analyze', [base / 'biologic_gcpl_intervals.mpr'])
+        row = payload['tables'][0]['rows'][0]
+        assert row['charge_mAh'] == 3 and row['discharge_mAh'] == 2
+        assert row['energy_efficiency_percent'] is None
+        assert 'biologic_interval_charge' in payload['diagnostics']
+        checks.append('biologic-gcpl-dq-without-measured-current')
         _, export = job("exports", "export", [eis.result_path, cycling.result_path],
                         {"destination": str(folder / "export"), "formats": ["png"], "language": "en"})
         assert list((folder / "export").rglob("*.xlsx")), export
         assert list((folder / "export").rglob("*.csv"))
         assert list((folder / "export").rglob("*.png"))
         checks.append("batch-export-csv-xlsx-png")
+        manifest = json.loads((folder / 'export' / 'manifest.json').read_text())
+        assert manifest['experiments'][1]['plot_legend'] == 'outside'
+        for mode in ('inside', 'hidden'):
+            destination = folder / ('legend-' + mode)
+            _, exported = job('exports', 'export', [intervals.result_path],
+                             {'destination': str(destination), 'formats': ['png', 'svg', 'pdf'],
+                              'language': 'ru', 'plot_legend': mode})
+            assert json.loads((destination / 'manifest.json').read_text())['experiments'][0]['plot_legend'] == mode
+            assert all(list(destination.rglob('*.' + fmt)) for fmt in ('png', 'svg', 'pdf'))
+        checks.append('export-legends-outside-inside-hidden')
+        from chem_suite.desktop.sessions import attach_result
+        attach_result(window.panels[0], eis.result_path)
+        attach_result(window.panels[1], intervals.result_path)
+        window.module_selector.setCurrentIndex(1)
+        recovery = window.updates.recovery
+        destination = recovery.destination()
+        window.save_session_to(destination)
+        wait(lambda: window.session_job is None)
+        recovery.remember(destination, __version__)
+        saved = recovery.pending()
+        assert saved is not None
+        for panel in window.panels:
+            panel.clear_workspace()
+        window.start_session('restore', (str(saved),), {}, on_finished=window.updates._restored)
+        wait(lambda: window.session_job is None)
+        assert all(panel.result_path for panel in window.panels)
+        assert window.module_selector.currentData() == 'cycling'
+        assert recovery.pending() is None and saved.is_file()
+        checks.append('update-session-backup-restore-both-modules')
         for mode in ("error", "crash"):
             record = window.jobs.submit(JobRequest("acceptance", "run", (), {"mode": mode}))
             wait(lambda: record.state.terminal)

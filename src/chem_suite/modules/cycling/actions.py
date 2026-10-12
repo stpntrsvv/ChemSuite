@@ -183,11 +183,17 @@ def analyze_file(request, context):
                 "capacity_from_step_mAh",
                 "capacity_from_phase_mAh",
                 "energy_from_step_mWh",
+                "current_basis",
+                "charge_increment_mAh",
+                "interval_start_s",
             ]
         )
         for step in steps:
             info = result["timeline"][step.step_id]
-            voltage_valid = step.voltage_kind == "cell" and all(vv >= 0 for vv in step.voltage_v)
+            voltage_valid = (
+                step.energy_available and step.voltage_kind == "cell"
+                and all(vv >= 0 for vv in step.voltage_v)
+            )
             for n, ((t, v, i), (q, energy)) in enumerate(
                 zip(zip(step.time_s, step.voltage_v, step.current_a), integrate(step, context))
             ):
@@ -201,12 +207,16 @@ def analyze_file(request, context):
                         info["cycle"],
                         info["step"],
                         t,
-                        info["elapsed_start_s"] + t - step.time_s[0],
+                        info["elapsed_start_s"] + t - step.start_s,
                         v,
                         i,
                         q if info["step"] != "rest" else 0.0,
                         info["phase_offset_mAh"] + q if info["step"] != "rest" else 0.0,
                         energy if voltage_valid else None,
+                        info["current_basis"],
+                        step.charge_increment_mah[n] if step.charge_increment_mah is not None else None,
+                        (step.time_s[n - 1] if n else step.interval_start_s)
+                        if step.charge_increment_mah is not None else None,
                     ]
                 )
     for name, rows in (
@@ -241,6 +251,7 @@ def analyze_file(request, context):
             "Шагов": len(steps),
             "Пауз": len(result["rests"]),
             "Канал напряжения": ", ".join(channels),
+            "Канал тока": ", ".join(sorted({s.current_channel for s in steps})),
             "Номинальная ёмкость, mAh": nominal if nominal is not None else "не задана",
             "Опорный цикл": result["reference_cycle"]
             if result["reference_cycle"] is not None
@@ -252,7 +263,9 @@ def analyze_file(request, context):
         "nominal_capacity_origin": nominal_origin,
         "reference_cycle": result["reference_cycle"],
         "voltage_channels": channels,
-        "method": "trapezoidal_current_and_power_within_steps_v2",
+        "method": "recorded_charge_intervals_and_sampled_current_v1"
+        if any(s.charge_increment_mah is not None for s in steps)
+        else "trapezoidal_current_and_power_within_steps_v2",
         "timeline_method": "file_time_then_concatenated_files"
         if all(s.time_basis == "file" for s in steps)
         else "concatenated_step_durations",

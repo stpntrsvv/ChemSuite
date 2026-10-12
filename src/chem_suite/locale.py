@@ -443,6 +443,14 @@ for _code, _ru, _en in [
 
 def text(value, language='ru'):
     value = str(value)
+    if value == 'biologic_interval_charge':
+        return ('Ёмкость рассчитана по записанному заряду dq. Ток — средний за интервал (dq/dt), '
+                'а не мгновенный. Энергия, VE и EE недоступны без измеренного тока.' if language == 'ru' else
+                'Capacity uses recorded charge increments dq. Current is an interval mean (dq/dt), '
+                'not instantaneous. Energy, VE and EE require measured current.')
+    if value == 'rest_only_recording':
+        return ('В файле записана только пауза: циклов заряда и разряда нет.' if language == 'ru' else
+                'This file contains only rest measurements; no charge/discharge cycles were recorded.')
     if match := re.fullmatch(r'(incomplete_cycle|negative_voltage|electrode_potential|zero_capacity):(\d+)(?::.*)?', value):
         messages = {
             'incomplete_cycle': ('Цикл {n}: записан только заряд или разряд; CE/VE/EE не рассчитаны', 'Cycle {n}: only charge or discharge recorded; CE/VE/EE unavailable'),
@@ -574,6 +582,11 @@ RU["Research result"] = "Результат исследования"
 EN["Результат исследования"] = "Research result"
 
 _CYCLING_PAIRS = """
+Легенда на графиках|Plot legend
+Под графиком|Below plot
+Внутри графика|Inside plot
+Без легенды|Hide legend
+Выбор легенды меняет только PNG/SVG/PDF; все кривые сохраняются.|Legend selection affects PNG/SVG/PDF only; all curves are preserved.
 Эксперименты|Experiments
 Эксперимент|Experiment
 Объединить файлы опыта…|Combine experiment files…
@@ -660,7 +673,19 @@ RU['Not analyzed'] = 'Не рассчитан'
 RU["BioLogic current channel"] = "Канал тока BioLogic"
 EN["Канал тока BioLogic"] = "BioLogic current channel"
 RU["Current channel"] = "Канал тока"
+EN["Канал тока"] = "Current channel"
 _ALIASES["current_channel"] = "Current channel"
+_ALIASES.update({"current_basis": "Current basis", "interval_mean": "Interval mean current",
+                 "recorded": "Recorded current", "dq/dt": "Mean current from dq/dt"})
+for _en, _ru in {
+    "Current basis": "Источник тока",
+    "Interval mean current": "Средний ток за интервал",
+    "Recorded current": "Записанный ток",
+    "Mean current from dq/dt": "Средний ток по dq/dt",
+    "BioLogic nonzero charge has no positive time interval; export MPT from EC-Lab":
+        "BioLogic: ненулевой заряд без положительного интервала времени; экспортируйте MPT из EC-Lab",
+}.items():
+    RU[_en], EN[_ru] = _ru, _en
 
 RU['View and export'] = 'Просмотр и экспорт'
 EN['Просмотр и экспорт'] = 'View and export'
@@ -758,6 +783,23 @@ _UPDATES = """
 Скачивание отменено|Download was cancelled
 Сейчас откроется установщик, а Chem Suite закроется. Сначала сохраните сессию.|The installer will open and Chem Suite will close. Save your session first.
 Сейчас откроется образ диска, а Chem Suite закроется. Перетащите Chem Suite в «Программы» и подтвердите замену. Сначала сохраните сессию.|The disk image will open and Chem Suite will close. Drag Chem Suite to Applications and confirm replacement. Save your session first.
+Обновление готово. Перед установкой можно сохранить сессию.|The update is ready. You can save your session before installing.
+Сохраняем сессию перед обновлением…|Saving a session before updating…
+Сохранить и обновить|Save and update
+Обновить без сохранения|Update without saving
+Сейчас откроется установщик, а Chem Suite закроется.|The installer will open and Chem Suite will close.
+Сейчас откроется образ диска, а Chem Suite закроется. Перетащите Chem Suite в «Программы» и подтвердите замену.|The disk image will open and Chem Suite will close. Drag Chem Suite to Applications and confirm replacement.
+Сохранить открытые данные, результаты и настройки на этом компьютере? После перезапуска можно будет восстановить сессию.|Save open data, results and settings locally? A session saved here can be restored after restarting.
+Восстановить сессию после обновления…|Restore session saved before updating…
+Восстановить сессию|Restore session
+Перед обновлением была сохранена сессия. Восстановить данные, результаты и настройки?|A session was saved before updating. Restore its data, results and settings?
+Начать без восстановления|Start without restoring
+Не удалось сохранить сессию перед обновлением|Could not save the recovery session
+Не удалось восстановить сессию перед обновлением|Could not restore the recovery session
+Сохранённая сессия для восстановления не найдена|Saved recovery session is missing
+Некорректная запись о сессии для восстановления|Invalid recovery session record
+Завершите текущий расчёт перед обновлением|Finish the current analysis before updating
+Не удалось сохранить сессию|Session save failed
 """
 for _pair in _UPDATES.strip().splitlines():
     _ru, _en = _pair.rsplit('|', 1)

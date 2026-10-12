@@ -126,6 +126,8 @@ Cycling поддерживает независимые эксперименты
 
 Фактические результаты проверок: [docs/validation.md](docs/validation.md).
 
+Ближайший выпуск и отложенные задачи: [docs/roadmap.md](docs/roadmap.md).
+
 Источники алгоритмов и авторство: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Desktop applications
@@ -135,3 +137,6 @@ Native macOS arm64 and Windows x64 packaging and packaged acceptance checks: [do
 ## Обновления
 
 Готовое приложение проверяет стабильные [GitHub Releases](https://github.com/stpntrsvv/ChemSuite/releases). В меню «Справка» есть ручная проверка и выключатель автоматической проверки. Скачивание не блокирует расчёты; установка доступна после их завершения. Подробности и выпуск новых версий: [docs/updates.md](docs/updates.md).
+
+В версии 0.1.3 обновление предлагает сохранить сессию и восстановить её при следующем запуске.
+Резервная копия хранится локально; обычное сохранение и открытие сессий доступны в меню «Файл».

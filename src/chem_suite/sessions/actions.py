@@ -104,6 +104,8 @@ def validate_state(state):
     from chem_suite.bootstrap import builtins
     registry = builtins()
     for panel in state['panels']:
+        if panel.get('export_legend') not in {None, 'outside', 'inside', 'hidden'}:
+            raise ValueError('Invalid session export legend mode')
         spec = registry.module(panel['module'])
         declared = {option.id: option for option in spec.options}
         if set(panel.get('controls', {})) - set(declared):

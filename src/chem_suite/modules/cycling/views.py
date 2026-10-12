@@ -160,8 +160,10 @@ def build_view(root, payload, context, *, selected_text="", page=1):
     if not 1 <= page <= 100000:
         raise ValueError("Table page must be between 1 and 100000")
     selected = select_cycles(selected_text, [r["cycle"] for r in metrics["cycles"]], preview=True)
-    shown_steps, total_steps = preview_steps(metrics, selected)
-    waveform = waveform_plots(root, metrics, selected, context)
+    # A recording containing only OCV is still viewable, with zero cycles.
+    waveform_selection = selected if metrics["cycles"] else {None}
+    shown_steps, total_steps = preview_steps(metrics, waveform_selection)
+    waveform = waveform_plots(root, metrics, waveform_selection, context)
     # Preserve the initial charge/efficiency/capacity ordering in saved results.
     plots = [
         waveform[0],

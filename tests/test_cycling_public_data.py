@@ -77,7 +77,7 @@ def test_real_formation_binary_text_parity_and_numeric_baseline(public_data):
             assert calculated[f"{phase}_mAh"] == pytest.approx(recorded, rel=0.005)
 
 
-def test_real_gcpl_decimal_comma_and_missing_binary_current(public_data):
+def test_real_gcpl_decimal_comma_and_binary_charge_intervals(public_data):
     steps = load_steps(public_data("gcpl-mpt"), Context())
     result = analyze_steps(steps, Context())
     assert sum(len(s.time_s) for s in steps) == 132
@@ -85,8 +85,28 @@ def test_real_gcpl_decimal_comma_and_missing_binary_current(public_data):
     assert [r["cycle"] for r in result["cycles"]] == [0, 1, 2, 3]
     assert result["cycles"][0]["charge_mAh"] == pytest.approx(8.329424723287879e-5, rel=1e-9)
     assert result["cycles"][0]["discharge_mAh"] == pytest.approx(8.183806006168985e-5, rel=1e-9)
-    with pytest.raises(ValueError, match="requires signed"):
-        load_steps(public_data("gcpl-mpr"), Context())
+    binary = load_steps(public_data("gcpl-mpr"), Context())
+    result = analyze_steps(binary, Context())
+    assert sum(len(s.time_s) for s in binary) == 132
+    assert result["cycle_count"] == 4
+    assert all(s.current_channel == "dq/dt" for s in binary)
+    # Instrument charge includes interval boundaries omitted by point-based MPT
+    # integration; do not force equality with the existing trapezoid baseline.
+    assert result["cycles"][0]["charge_mAh"] == pytest.approx(8.336162903749694e-5, rel=1e-9)
+    assert result["cycles"][0]["discharge_mAh"] == pytest.approx(8.331483295342575e-5, rel=1e-9)
+    assert "biologic_interval_charge" in result["diagnostics"]
+    # Independent instrument accumulator, not a reintegration of our inferred current.
+    from galvani import BioLogic
+    with public_data("gcpl-mpr").open("rb") as stream:
+        raw = BioLogic.MPRfile(stream).data
+    half_cycles = raw["half cycle"]
+    counters = [raw["Q charge/discharge/mA.h"][half_cycles == h][-1] for h in set(half_cycles)]
+    assert sum(r["charge_mAh"] for r in result["cycles"]) == pytest.approx(
+        sum(q for q in counters if q > 0), rel=1e-10
+    )
+    assert sum(r["discharge_mAh"] for r in result["cycles"]) == pytest.approx(
+        -sum(q for q in counters if q < 0), rel=1e-10
+    )
 
 
 def test_real_sintef_cccv_instrument_error_is_not_a_success(public_data):

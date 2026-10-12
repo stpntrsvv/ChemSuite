@@ -6,6 +6,7 @@ from importlib import import_module
 from pathlib import Path
 
 from chem_suite.core.artifacts import write_json
+from .plots import render_plots
 
 
 def write_csv(path, rows, columns=None):
@@ -26,45 +27,18 @@ def copy_file(source, target, context):
             outgoing.write(chunk)
 
 
-def render_plots(folder, groups, formats, language, context):
-    from matplotlib.figure import Figure
-    from chem_suite.locale import text
-    for name, specs in groups.items():
-        context.check_cancelled()
-        figure = Figure(figsize=(7, 4 * len(specs)), layout='constrained')
-        axes = figure.subplots(len(specs), 1, squeeze=False)
-        for row, spec in enumerate(specs):
-            axis = axes[row, 0]
-            palette = ('#087f8c', '#d27b2c', '#42885b', '#87569c', '#b74e55')
-            for index, curve in enumerate(spec['series']):
-                color = palette[index % len(palette)]
-                if curve['kind'] == 'scatter':
-                    axis.scatter(curve['x'], curve['y'], s=12, color=color, label=text(curve['label'], language))
-                else:
-                    axis.plot(curve['x'], curve['y'], color=color, label=text(curve['label'], language))
-            axis.set(title=text(spec['title'], language), xlabel=text(spec['xlabel'], language),
-                     ylabel=text(spec['ylabel'], language), xscale=spec['xscale'], yscale=spec['yscale'])
-            if spec.get('equal_aspect'):
-                axis.set_aspect('equal', adjustable='box')
-            axis.grid(True, alpha=.2)
-            if spec['series']:
-                axis.legend(fontsize=8)
-        for extension in formats:
-            context.check_cancelled()
-            if extension not in {'png', 'svg', 'pdf'}:
-                raise ValueError('Unsupported plot format')
-            figure.savefig(folder / f'{name}.{extension}', dpi=180)
-        figure.clear()
-
-
 def export_results(request, context):
     if not request.inputs:
         raise ValueError('No successful results to export')
+    legend = request.config.get('plot_legend', 'auto')
+    if legend not in {'auto', 'outside', 'inside', 'hidden'}:
+        raise ValueError('Unsupported export legend mode')
     root = context.publication(request.config['destination'])
     options = request.config.get('outputs', {})
     language = request.config.get('language', 'en')
     summaries, sheets, manifest = [], [], {'schema_version': 1, 'language': language,
-        'outputs': options, 'formats': request.config.get('formats', ['png']), 'experiments': [], 'files': []}
+        'outputs': options, 'formats': request.config.get('formats', ['png']), 'plot_legend': legend,
+        'experiments': [], 'files': []}
     handlers = {'eis': 'chem_suite.modules.eis.exporting', 'cycling': 'chem_suite.modules.cycling.exporting'}
     for index, raw in enumerate(request.inputs):
         context.progress(index / len(request.inputs), f'Exporting result {index + 1}/{len(request.inputs)}')
@@ -129,11 +103,13 @@ def export_results(request, context):
             module.export_extras(folder, result_path, result, request.config, context)
         selected = {name: specs for name, specs in groups.items() if specs and options.get(name, True)}
         formats = request.config.get('formats', ['png'])
+        resolved_legend = ('outside' if result['module'] == 'cycling' else 'inside') if legend == 'auto' else legend
         if formats and selected:
-            render_plots(folder, selected, formats, language, context)
+            render_plots(folder, selected, formats, language, context, legend=resolved_legend)
         manifest['experiments'].append({
             'directory': label, 'result_source': str(result_path), 'sources': payload['sources'],
             'module_version': result['module_version'], 'request': result['request'],
+            'plot_legend': resolved_legend,
         })
     if options.get('summary', True):
         columns = list(dict.fromkeys(key for row in summaries for key in row))

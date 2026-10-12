@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QGridLayout, QLabel, QVBoxLayout
+from PySide6.QtWidgets import QCheckBox, QComboBox, QDialog, QDialogButtonBox, QGridLayout, QLabel, QVBoxLayout
 from chem_suite.locale import text
 
 
@@ -51,6 +51,17 @@ class ExportDialog(QDialog):
             self.format_boxes[extension] = box
             formats.addWidget(box, 0, index)
         layout.addLayout(formats)
+        legend_row = QGridLayout()
+        legend_row.addWidget(QLabel(text('Легенда на графиках', language)), 0, 0)
+        self.legend_mode = QComboBox()
+        for key, label in [('outside', 'Под графиком'), ('inside', 'Внутри графика'), ('hidden', 'Без легенды')]:
+            self.legend_mode.addItem(text(label, language), key)
+        self.legend_mode.setCurrentIndex(self.legend_mode.findData('outside' if module == 'cycling' else 'inside'))
+        legend_row.addWidget(self.legend_mode, 0, 1)
+        layout.addLayout(legend_row)
+        note = QLabel(text('Выбор легенды меняет только PNG/SVG/PDF; все кривые сохраняются.', language))
+        note.setWordWrap(True)
+        layout.addWidget(note)
         self.message = QLabel()
         layout.addWidget(self.message)
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
@@ -65,6 +76,9 @@ class ExportDialog(QDialog):
 
     def formats(self):
         return [key for key, box in self.format_boxes.items() if box.isChecked()]
+
+    def plot_legend(self):
+        return self.legend_mode.currentData()
 
     def accept(self):
         outputs = self.outputs()

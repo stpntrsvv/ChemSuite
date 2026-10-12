@@ -19,7 +19,8 @@ def control_value(option, control):
 def capture_panel(panel):
     state = {'module': panel.spec.id, 'action': panel.action.currentData(), 'path': panel.path.text(),
         'controls': {name: control_value(option, control) for name, (option, control) in panel.options.items()},
-        'splitter': panel.splitter.sizes(), 'result': {'$bundle': panel.result_path} if panel.result_path else None}
+        'splitter': panel.splitter.sizes(), 'result': {'$bundle': panel.result_path} if panel.result_path else None,
+        'export_legend': getattr(panel, '_export_legend', None)}
     if hasattr(panel, 'capture_session'):
         state.update(panel.capture_session())
     elif hasattr(panel, 'datasets'):
@@ -74,6 +75,10 @@ def prepare_state(state):
 
 
 def apply_panel(panel, state, results):
+    if state.get('export_legend') is not None:
+        panel._export_legend = state['export_legend']
+    elif hasattr(panel, '_export_legend'):
+        del panel._export_legend
     panel.runtime_sources = state.get('_runtime_sources', {})
     panel.action.blockSignals(True)
     for name, value in state['controls'].items():

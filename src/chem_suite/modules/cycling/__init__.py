@@ -29,7 +29,7 @@ SPEC = ModuleSpec(
             "Канал тока BioLogic",
             "choice",
             "auto",
-            ("auto", "<I>/A", "<I>/mA", "I/A", "I/mA"),
+            ("auto", "<I>/A", "<I>/mA", "I/A", "I/mA", "dq/dt"),
         ),
         OptionSpec("voltage_kind", "Тип напряжения", "choice", "auto", ("auto", "cell", "electrode")),
         OptionSpec("rest_threshold_A", "Порог тока паузы, A", "number", "1e-9"),

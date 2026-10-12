@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 from PySide6.QtCore import QObject, QTimer, QUrl, Signal
 from PySide6.QtNetwork import QNetworkReply, QNetworkRequest
-from PySide6.QtWidgets import QMainWindow, QMessageBox
+from PySide6.QtWidgets import QMainWindow
 
 from chem_suite.core.contracts import JobState
 from chem_suite.desktop.app import create_application
@@ -235,6 +235,7 @@ def controller(app, tmp_path, monkeypatch):
     window = QMainWindow()
     window.language = 'ru'
     window.about_menu = window.menuBar().addMenu('Help')
+    window.file_menu = window.menuBar().addMenu('File')
     window.session_job = None
     window.panels = [SimpleNamespace(_busy=False)]
     window.jobs = SimpleNamespace(workspace=tmp_path, records=lambda: [])
@@ -276,7 +277,7 @@ def test_active_work_blocks_install_before_confirmation(controller, monkeypatch,
     else:
         state = {'queued':JobState.QUEUED, 'running':JobState.RUNNING, 'cancelling':JobState.CANCELLING}[busy]
         ctrl.window.jobs.records = lambda: [SimpleNamespace(state=state)]
-    monkeypatch.setattr(QMessageBox, 'question', lambda *args: pytest.fail('Must not interrupt active work'))
+    monkeypatch.setattr(ctrl, 'confirm_install', lambda: pytest.fail('Must not interrupt active work'))
     ctrl.install()
     assert not ctrl.installing
 
@@ -287,7 +288,7 @@ def test_new_job_during_reverification_prevents_launch(app, controller, monkeypa
     ctrl.client.state = 'ready'
     ctrl.client.path = tmp_path / ctrl.client.offer.name
     ctrl.client.path.write_bytes(b'verified installer')
-    monkeypatch.setattr(QMessageBox, 'question', lambda *args: QMessageBox.Yes)
+    monkeypatch.setattr(ctrl, 'confirm_install', lambda: 'skip')
     monkeypatch.setattr(updates, 'launch_installer', lambda *args: pytest.fail('A new job is active'))
     ctrl.install()
     ctrl.window.panels[0]._busy = True
@@ -303,7 +304,7 @@ def test_reverification_failure_keeps_app_open_and_reports_error(app, controller
     ctrl.client.path = tmp_path / ctrl.client.offer.name
     ctrl.client.path.write_bytes(b'corrupted after download')
     ctrl.checked('available')
-    monkeypatch.setattr(QMessageBox, 'question', lambda *args: QMessageBox.Yes)
+    monkeypatch.setattr(ctrl, 'confirm_install', lambda: 'skip')
     monkeypatch.setattr(updates, 'launch_installer', lambda *args: pytest.fail('Corrupt installer'))
     ctrl.install()
     wait(app, lambda: not ctrl.installing)

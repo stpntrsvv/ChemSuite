@@ -5,6 +5,14 @@ from chem_suite.core.plots import plot, series
 
 
 def integrate(step, context):
+    if step.charge_increment_mah is not None:
+        q = 0.0
+        for k, dq in enumerate(step.charge_increment_mah):
+            if k % 10000 == 0:
+                context.check_cancelled()
+            q += dq
+            yield abs(q), 0.0
+        return
     q = e = 0.0
     yield 0.0, 0.0
     for k in range(1, len(step.time_s)):
@@ -68,6 +76,8 @@ def analyze_steps(steps, context, *, rest_threshold_a=1e-9, nominal_capacity_mah
     file_origins, file_offsets, phase_q = {}, {}, {}
     timeline, grouped = {}, {}
     previous_step = None
+    if any(s.charge_increment_mah is not None for s in steps):
+        diagnostics.append("biologic_interval_charge")
     for index, step in enumerate(steps):
         context.check_cancelled()
         step.validate()
@@ -90,14 +100,14 @@ def analyze_steps(steps, context, *, rest_threshold_a=1e-9, nominal_capacity_mah
             if direction != "rest" or previous_direction is not None or step.declared_cycle is not None
             else None
         )
-        duration = step.time_s[-1] - step.time_s[0]
+        duration = step.time_s[-1] - step.start_s
         if step.time_basis == "file":
             if step.source_file not in file_origins:
-                file_origins[step.source_file] = step.time_s[0]
+                file_origins[step.source_file] = step.start_s
                 file_offsets[step.source_file] = elapsed
-            start = file_offsets[step.source_file] + step.time_s[0] - file_origins[step.source_file]
+            start = file_offsets[step.source_file] + step.start_s - file_origins[step.source_file]
             if previous_step and previous_step.source_file == step.source_file:
-                gap = step.time_s[0] - previous_step.time_s[-1]
+                gap = step.start_s - previous_step.time_s[-1]
                 if gap > 0:
                     diagnostics.append(f"unintegrated_boundary_s:{step_id}:{gap:.9g}")
         else:
@@ -112,6 +122,7 @@ def analyze_steps(steps, context, *, rest_threshold_a=1e-9, nominal_capacity_mah
             "instrument_cycle": step.instrument_cycle,
             "voltage_channel": step.voltage_channel,
             "current_channel": step.current_channel,
+            "current_basis": "interval_mean" if step.charge_increment_mah is not None else "recorded",
             "duration_s": duration,
             "elapsed_start_s": start,
             "elapsed_end_s": start + duration,
@@ -130,7 +141,10 @@ def analyze_steps(steps, context, *, rest_threshold_a=1e-9, nominal_capacity_mah
         else:
             charges, energies = zip(*integrate(step, context))
             capacity, energy = charges[-1], energies[-1]
-            voltage_valid = step.voltage_kind == "cell" and all(v >= 0 for v in step.voltage_v)
+            voltage_valid = (
+                step.energy_available and step.voltage_kind == "cell"
+                and all(v >= 0 for v in step.voltage_v)
+            )
             if capacity == 0:
                 diagnostics.append(f"zero_capacity:{cycle}:{step.source_index}")
             if any(v < 0 for v in step.voltage_v):
@@ -171,6 +185,8 @@ def analyze_steps(steps, context, *, rest_threshold_a=1e-9, nominal_capacity_mah
         previous_step = step
         context.progress(0.3 + 0.5 * (index + 1) / len(steps), f"Циклирование: шаг {index + 1}/{len(steps)}")
     cycles = []
+    if not metrics and rests:
+        diagnostics.append("rest_only_recording")
     for cycle_id, values in sorted(grouped.items()):
         ch_q, dch_q, ch_e, dch_e = (values[k] for k in ("ch_q", "dch_q", "ch_e", "dch_e"))
         paired = ch_q > 0 and dch_q > 0

@@ -29,12 +29,32 @@ the app closes and the user drags Chem Suite to Applications to confirm replacem
 No Gatekeeper, signature or system permission checks are disabled. A future Sparkle
 integration can automate Mac replacement once release signing is configured.
 
-Save the current session before restarting: this version does not automatically restore
-open tabs. The workspace, preferences, source data and saved scientific results are
-outside application installation directories and are not removed by the updater.
+Starting with 0.1.3, installation offers **Save and update**, **Update without saving**,
+and **Cancel**. Saving uses the session worker: it copies completed result bundles,
+source snapshots and checksums, plus both modules' controls, selected data, views,
+language and export legend preference into a new local recovery session. The installer
+cannot launch until saving and publication succeed. Cancellation or failure keeps the
+application open. No laboratory data is uploaded.
 
-`0.1.0` predates the updater; `0.1.1` has a Qt redirect bug. Install `0.1.2` manually once.
-Further versions use this flow.
+At the next launch, a saved handoff session offers **Restore session**, **Later**, or
+**Start without restoring**. Restoration validates the session in a worker and opens
+saved results without recalculating. Later keeps the prompt for the next launch; the
+File menu also offers restoration. A failed restore retains the backup and prompt.
+Successful restoration or choosing to start fresh removes only the handoff record:
+the session directory remains available through File → Open session. If the external
+installer is cancelled, the same saved session can still be restored on the next launch.
+
+Recovery sessions live under the user-data `updates/recovery/sessions` directory
+(`workspace/.updates/recovery/sessions` for source launches). These backups can contain
+private source data and are local, outside the installation. Keep or remove completed
+backup directories manually when no longer needed. This is an update handoff, not
+continuous autosave or crash recovery. Ordinary File → Save/Open session remains available.
+The workspace, preferences, source data and saved scientific results are outside
+application installation directories and are not removed by the updater.
+
+`0.1.0` predates the updater; `0.1.1` has a Qt redirect bug. Install the latest release manually once.
+`0.1.2` can offer 0.1.3, but its old installer flow requires a manual session save;
+the save-and-restore offer becomes available after installing 0.1.3.
 Automatic checks use no GitHub token and send only a versioned User-Agent, never lab data.
 Update preferences and installers live in the user-data `updates` folder alongside,
 not inside, the calculation workspace. Cancelling a download removes its partial file.

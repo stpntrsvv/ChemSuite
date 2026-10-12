@@ -21,7 +21,8 @@ from chem_suite.core.artifacts import write_json
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, workspace, *, registry=None, auto_update_check=True):
+    def __init__(self, workspace, *, registry=None, auto_update_check=True,
+                 update_directory=None, restore_update_session=True):
         super().__init__()
         self.setWindowTitle("Chem Suite")
         self.resize(1280, 820)
@@ -38,6 +39,7 @@ class MainWindow(QMainWindow):
         except (OSError, ValueError):
             pass
         self.session_job = None
+        self._session_callback = None
         self.qt_translator = None
         self.module_stack = QStackedWidget()
         self.setCentralWidget(self.module_stack)
@@ -60,6 +62,7 @@ class MainWindow(QMainWindow):
         self.build_toolbar()
         self.build_history()
         file_menu = self.menuBar().addMenu("Файл")
+        self.file_menu = file_menu
         self.save_session_action = QAction('Save session…', self)
         self.save_session_action.setShortcut('Ctrl+Shift+S')
         self.save_session_action.triggered.connect(self.save_session)
@@ -84,7 +87,8 @@ class MainWindow(QMainWindow):
         self.about_action.triggered.connect(self.show_about)
         self.about_menu.addAction(self.about_action)
         from chem_suite.desktop.updates import UpdatesController
-        self.updates = UpdatesController(self, schedule=auto_update_check)
+        self.updates = UpdatesController(self, schedule=auto_update_check,
+                                         directory=update_directory, restore=restore_update_session)
         self.module_selector.currentIndexChanged.connect(self.select_module)
         for panel in self.panels:
             panel.state_changed.connect(self.sync_actions)
@@ -268,16 +272,19 @@ class MainWindow(QMainWindow):
     def save_session(self):
         from datetime import datetime
         from uuid import uuid4
-        from chem_suite.desktop.sessions import capture_panel
         if self.session_job or any(p._busy for p in self.panels):
             return
         parent = QFileDialog.getExistingDirectory(self, text('Session folder', self.language))
         if not parent:
             return
+        target = Path(parent) / ('Chem-Suite-session-' + datetime.now().strftime('%Y%m%d-%H%M%S') + '-' + uuid4().hex[:6])
+        self.save_session_to(target)
+
+    def save_session_to(self, target, *, on_finished=None):
+        from chem_suite.desktop.sessions import capture_panel
         state = {'language': self.language, 'active_module': self.module_selector.currentData(),
             'panels': [capture_panel(p) for p in self.panels], 'size': [self.width(), self.height()]}
-        target = Path(parent) / ('Chem-Suite-session-' + datetime.now().strftime('%Y%m%d-%H%M%S') + '-' + uuid4().hex[:6])
-        self.start_session('save', (), {'state': state, 'destination': str(target)})
+        return self.start_session('save', (), {'state': state, 'destination': str(target)}, on_finished=on_finished)
 
     def open_session(self):
         if self.session_job or any(p._busy for p in self.panels):
@@ -293,16 +300,18 @@ class MainWindow(QMainWindow):
         if path:
             self.start_session('result', (path,), {})
 
-    def start_session(self, action, inputs, config):
+    def start_session(self, action, inputs, config, *, on_finished=None):
         from chem_suite.core.contracts import JobRequest
         if self.session_job or any(p._busy for p in self.panels):
             return
         record = self.jobs.submit(JobRequest('sessions', action, tuple(inputs), config))
         self.session_job = record.id
+        self._session_callback = on_finished
         for panel in self.panels:
             panel.set_busy(True)
             panel.set_status('Saving session' if action == 'save' else 'Opening saved analysis')
         self.sync_actions()
+        return record.id
 
     def session_event(self, event):
         from chem_suite.core.contracts import JobState
@@ -312,6 +321,8 @@ class MainWindow(QMainWindow):
             return
         record = self.jobs.record(event.job_id)
         self.session_job = None
+        callback, self._session_callback = self._session_callback, None
+        payload, error = None, ''
         for panel in self.panels:
             panel.set_busy(False)
         try:
@@ -336,8 +347,11 @@ class MainWindow(QMainWindow):
             else:
                 self.active_panel.set_status('Session saved to ' + payload['destination'])
         except Exception as exc:
+            error = str(exc)
             self.active_panel.set_status(str(exc))
         self.sync_actions()
+        if callback is not None:
+            callback(payload if not error else None, error)
 
 
 def create_application():

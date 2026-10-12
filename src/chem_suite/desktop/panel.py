@@ -337,22 +337,27 @@ class ModulePanel(QWidget):
             self.set_status("Нет готовых результатов для экспорта.")
             return
         dialog = ExportDialog(self, self.language, self.spec.id, len(paths), getattr(self, "export_action", self.action.currentData()))
+        previous_legend = getattr(self, '_export_legend', None)
+        if previous_legend is not None:
+            dialog.legend_mode.setCurrentIndex(dialog.legend_mode.findData(previous_legend))
         if not dialog.exec():
             return
         parent = QFileDialog.getExistingDirectory(self, text("Папка для экспорта", self.language))
         if not parent:
             return
         destination = Path(parent) / ("Chem-Suite-export-" + datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid4().hex[:6])
-        self.start_export(paths, str(destination), dialog.outputs(), dialog.formats())
+        self._export_legend = dialog.plot_legend()
+        self.start_export(paths, str(destination), dialog.outputs(), dialog.formats(), plot_legend=self._export_legend)
 
     def get_export_config(self, outputs):
         return self.get_config()
 
-    def start_export(self, paths, destination, outputs, formats):
+    def start_export(self, paths, destination, outputs, formats, *, plot_legend="auto"):
         if self._busy:
             return
         record = self.jobs.submit(JobRequest("exports", "export", tuple(paths), {
             "destination": destination, "outputs": outputs, "formats": formats, "language": self.language, "module_config": self.get_export_config(outputs),
+            "plot_legend": plot_legend,
         }, timeout_seconds=600))
         self.current_job = record.id
         self._operation = "export"

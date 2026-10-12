@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QMessageBox, QPlainT
 
 from chem_suite.core.paths import user_data_directory
 from chem_suite.desktop.update_client import UpdateClient
+from chem_suite.desktop.session_recovery import SessionRecovery
 from chem_suite.locale import text
 
 
@@ -90,12 +91,14 @@ class UpdateDialog(QDialog):
             message = 'Install the packaged application to receive updates here.'
         elif client.state == 'downloading':
             message = 'Downloading update…'
+        elif self.controller._saving:
+            message = 'Saving a session before updating…'
         elif self.controller.installing:
             message = 'Verifying downloaded update…'
         elif ready and not self.controller.can_install():
             message = 'The update is ready. Finish the current analysis before installing.'
         elif ready:
-            message = 'The update is ready. Save your session before restarting.'
+            message = 'The update is ready. You can save your session before installing.'
         elif client.state == 'error':
             message = 'Update failed'
         else:
@@ -128,12 +131,16 @@ class UpdateDialog(QDialog):
 
 
 class UpdatesController:
-    def __init__(self, window, *, schedule=True):
+    def __init__(self, window, *, schedule=True, directory=None, restore=True):
         self.window = window
-        directory = user_data_directory() / 'updates' if getattr(sys, 'frozen', False) else window.jobs.workspace / '.updates'
+        if directory is None:
+            directory = user_data_directory() / 'updates' if getattr(sys, 'frozen', False) else window.jobs.workspace / '.updates'
         self.client = UpdateClient(directory, window)
         self.dialog = None
         self.installing = False
+        self._saving = False
+        self._saved_session = None
+        self.recovery = SessionRecovery(directory / 'recovery')
         self._executor = None
         self._future = None
         self.check_action = QAction('Check for updates…', window)
@@ -144,6 +151,15 @@ class UpdatesController:
         self.auto_action.toggled.connect(self.client.set_automatic)
         window.about_menu.addSeparator()
         window.about_menu.addActions([self.check_action, self.auto_action])
+        self.restore_action = QAction('Restore session saved before updating…', window)
+        self.restore_action.triggered.connect(self.offer_restore)
+        window.file_menu.addAction(self.restore_action)
+        self.restore_action.setEnabled(self.recovery.pointer.exists())
+        self._restore_startup = QTimer(window)
+        self._restore_startup.setSingleShot(True)
+        self._restore_startup.timeout.connect(self.offer_restore)
+        if restore:
+            self._restore_startup.start(250)
         self.client.checked.connect(self.checked)
         self.client.failed.connect(self.failed)
         self.client.changed.connect(lambda: self.check_action.setEnabled(not self.client.busy and not self.installing))
@@ -189,12 +205,51 @@ class UpdatesController:
     def install(self):
         if self.installing or self.client.state != 'ready' or not getattr(sys, 'frozen', False) or not self.can_install():
             return
-        message = ('The installer will open and Chem Suite will close. Save your session first.' if sys.platform == 'win32' else
-                   'The disk image will open and Chem Suite will close. Drag Chem Suite to Applications and confirm replacement. Save your session first.')
-        answer = QMessageBox.question(self.window, text('Install update', self.window.language), text(message, self.window.language))
-        if answer != QMessageBox.Yes or not self.can_install():
+        choice = self.confirm_install()
+        if choice not in {'save', 'skip'} or not self.can_install():
             return
         self.installing = True
+        self._saved_session = None
+        if choice == 'save':
+            self._saving = True
+            self.client.changed.emit()
+            try:
+                if not self.window.save_session_to(self.recovery.destination(), on_finished=self._session_saved):
+                    self._session_saved(None, 'Finish the current analysis before updating')
+            except (OSError, ValueError) as exc:
+                self._session_saved(None, str(exc))
+        else:
+            self._begin_verification()
+
+    def confirm_install(self):
+        language = self.window.language
+        message = ('The installer will open and Chem Suite will close.' if sys.platform == 'win32' else
+                   'The disk image will open and Chem Suite will close. Drag Chem Suite to Applications and confirm replacement.')
+        box = QMessageBox(self.window)
+        box.setWindowTitle(text('Install update', language))
+        box.setText(text(message, language))
+        box.setInformativeText(text('Save open data, results and settings locally? A session saved here can be restored after restarting.', language))
+        save = box.addButton(text('Save and update', language), QMessageBox.AcceptRole)
+        skip = box.addButton(text('Update without saving', language), QMessageBox.DestructiveRole)
+        box.addButton(text('Cancel', language), QMessageBox.RejectRole)
+        box.setDefaultButton(save)
+        box.exec()
+        return 'save' if box.clickedButton() == save else 'skip' if box.clickedButton() == skip else None
+
+    def _session_saved(self, payload, error):
+        self._saving = False
+        if error or payload is None:
+            self.installing = False
+            self.client._fail('Could not save the recovery session: ' + (error or 'Session save failed'))
+            return
+        self._saved_session = Path(payload['destination'])
+        self._begin_verification()
+
+    def _begin_verification(self):
+        if not self.can_install():
+            self.installing = False
+            self.client.changed.emit()
+            return
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='update-integrity')
         self._future = self._executor.submit(verify_installer, self.client.path, self.client.offer)
         self._timer.start()
@@ -212,6 +267,9 @@ class UpdatesController:
             # A calculation may have started during verification.
             if not self.can_install():
                 return
+            if self._saved_session is not None:
+                self.recovery.remember(self._saved_session, self.client.offer.version)
+                self.restore_action.setEnabled(True)
             if not launch_installer(self.client.path, self.window.language):
                 raise OSError('Could not open the update installer')
             self.installing = False
@@ -230,9 +288,53 @@ class UpdatesController:
                 self.dialog.refresh()
 
     def close(self):
+        self._restore_startup.stop()
         if hasattr(self, '_startup'):
             self._startup.stop()
         self.client.cancel()
         self._timer.stop()
         if self._executor:
             self._executor.shutdown(wait=False, cancel_futures=True)
+
+    def offer_restore(self):
+        if self.installing or not self.can_install():
+            return
+        self.restore_action.setEnabled(self.recovery.pointer.exists())
+        try:
+            path = self.recovery.pending()
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self.window, text('Restore session', self.window.language),
+                                text('Could not restore the recovery session', self.window.language) + ': ' + str(exc))
+            return
+        if path is None:
+            return
+        box = QMessageBox(self.window)
+        box.setWindowTitle(text('Restore session', self.window.language))
+        box.setText(text('A session was saved before updating. Restore its data, results and settings?', self.window.language))
+        box.setInformativeText(str(path))
+        restore = box.addButton(text('Restore session', self.window.language), QMessageBox.AcceptRole)
+        discard = box.addButton(text('Start without restoring', self.window.language), QMessageBox.DestructiveRole)
+        box.addButton(text('Later', self.window.language), QMessageBox.RejectRole)
+        box.setDefaultButton(restore)
+        box.exec()
+        if box.clickedButton() == discard:
+            try:
+                self.recovery.forget()
+                self.restore_action.setEnabled(False)
+            except OSError as exc:
+                QMessageBox.warning(self.window, text('Restore session', self.window.language), str(exc))
+        elif box.clickedButton() == restore and self.can_install():
+            self.window.start_session('restore', (str(path),), {}, on_finished=self._restored)
+
+    def _restored(self, payload, error):
+        if error or payload is None:
+            QMessageBox.warning(self.window, text('Restore session', self.window.language),
+                                text('Could not restore the recovery session', self.window.language) + ': ' + error)
+            return
+        try:
+            self.recovery.forget()
+            self.restore_action.setEnabled(False)
+        except OSError as exc:
+            # Successful scientific restoration stays visible even if clearing
+            # the small handoff record fails; its backup is never removed.
+            self.window.active_panel.set_status(str(exc))

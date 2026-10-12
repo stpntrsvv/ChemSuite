@@ -4,7 +4,7 @@ from PySide6.QtCore import QTimer
 from chem_suite.desktop.app import MainWindow, create_application
 from chem_suite.desktop.sessions import capture_panel, attach_result
 from chem_suite.modules.cycling.desktop import CyclingPanel
-from tests.cycling_fixtures import mpt, ROWS
+from tests.cycling_fixtures import mpt, mpr_intervals, ROWS
 
 
 def finish(app, window):
@@ -14,6 +14,26 @@ def finish(app, window):
         time.sleep(0.002)
         assert time.monotonic() < deadline
     app.processEvents()
+
+
+def test_mpr_interval_current_warning_survives_language_switch(tmp_path):
+    app = create_application()
+    window = MainWindow(tmp_path / "workspace")
+    panel = window.panels[1]
+    source = mpr_intervals(tmp_path / "intervals.mpr")
+    try:
+        panel.load_sources([source])
+        finish(app, window)
+        assert panel.batch_failures == 0
+        assert "Ток — средний за интервал" in panel.summary.text()
+        assert "Энергия, VE и EE недоступны" in panel.summary.text()
+        window.set_language("en")
+        assert "Current is an interval mean" in panel.summary.text()
+        assert "Current channel: Mean current from dq/dt" in panel.summary.text()
+        window.set_language("ru")
+        assert "Ток — средний за интервал" in panel.summary.text()
+    finally:
+        window.close()
 
 
 def test_many_pulse_steps_preview_limit_is_visible_in_both_languages(tmp_path):
