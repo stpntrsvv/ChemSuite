@@ -14,6 +14,7 @@ for package in ("chem-suite", "impedance", "galvani", "numpy", "scipy", "pandas"
 hiddenimports = collect_submodules("chem_suite") + collect_submodules("impedance", filter=lambda name: not name.startswith("impedance.tests")) + ["galvani.BioLogic"]
 a = Analysis([str(root / "tools/launcher.py")], pathex=[str(root / "src")],
              binaries=[], datas=datas, hiddenimports=hiddenimports,
+             hooksconfig={'matplotlib': {'backends': ['Agg', 'svg', 'pdf']}},
              excludes=["PyQt5", "PyQt6", "PySide2", "IPython", "pytest", "tkinter"], noarchive=False)
 pyz = PYZ(a.pure)
 icon = str(assets / ("chemsuite.icns" if sys.platform == "darwin" else "chemsuite.ico"))
